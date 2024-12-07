@@ -5,11 +5,11 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Progress } from "@/components/ui/progress"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExternalLink, Globe, Lock } from "lucide-react"
-import { defaultSteps, Idea, Step } from "@/lib/types"
-import { format } from "date-fns"
+import {  Idea, Step } from "@/lib/types"
+
+import MyRoadmap from "./MyRoadmap"
 
 interface ManageIdeaSheetProps {
   idea: Idea
@@ -22,16 +22,6 @@ export default function ManageIdeaSheet({ idea, onUpdateProgress }: ManageIdeaSh
     return Math.round((steps.filter(step => step.isCompleted).length / steps.length) * 100)
   }
 
-  const handleStepToggle = async (stepId: string) => {
-    const updatedSteps = (idea.steps || defaultSteps).map(s =>
-      s.id === stepId ? {
-        ...s,
-        isCompleted: !s.isCompleted,
-        completedAt: !s.isCompleted ? new Date() : null
-      } : s
-    )
-    await onUpdateProgress(idea, updatedSteps)
-  }
 
   return (
     <Sheet>
@@ -67,32 +57,7 @@ export default function ManageIdeaSheet({ idea, onUpdateProgress }: ManageIdeaSh
             </div>
 
             <ScrollArea className="h-[60vh] pr-4">
-              <div className="space-y-4">
-                {(idea.steps || defaultSteps).map((step) => (
-                  <div key={step.id} className="flex items-start space-x-3 py-2">
-                    <Checkbox
-                      id={step.id}
-                      checked={step.isCompleted}
-                      onCheckedChange={() => handleStepToggle(step.id)}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor={step.id}
-                          className="text-sm font-medium leading-none cursor-pointer"
-                        >
-                          {step.name}
-                        </Label>
-                        {step.completedAt && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(step.completedAt), 'MMM d, yyyy')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+             <MyRoadmap idea={idea} onUpdateProgress={onUpdateProgress}/>
             </ScrollArea>
           </TabsContent>
 
