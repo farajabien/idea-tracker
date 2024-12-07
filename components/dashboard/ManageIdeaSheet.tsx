@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExternalLink, Globe, Lock } from "lucide-react"
-import { Idea, Step, Resource } from "@/lib/types"
+import { Idea, Step } from "@/lib/types"
 
-import { addResource, deleteResource, updateProjectVisibility } from "@/app/api/firebaseApi"
+import {  deleteResource, updateProjectVisibility } from "@/app/api/firebaseApi"
 import { toast } from "sonner"
 
 import MyRoadmap from "./MyRoadmap"
@@ -27,36 +27,12 @@ export default function ManageIdeaSheet({
   onUpdateVisibility 
 }: ManageIdeaSheetProps) {
   const [isUpdating, setIsUpdating] = useState(false)
-  const [newResource, setNewResource] = useState({
-    title: "",
-    url: "",
-    type: "inspiration" as Resource["type"],
-    notes: ""
-  })
 
   const getProgress = (steps: Step[]) => {
     if (!steps || steps.length === 0) return 0
     return Math.round((steps.filter(step => step.isCompleted).length / steps.length) * 100)
   }
 
-  const handleAddResource = async (stepId: string) => {
-    try {
-      setIsUpdating(true)
-      await addResource(idea.id, stepId, newResource)
-      setNewResource({
-        title: "",
-        url: "",
-        type: "inspiration",
-        notes: ""
-      })
-      toast.success("Resource added successfully")
-    } catch (error) {
-      toast.error("Failed to add resource")
-      console.error(error)
-    } finally {
-      setIsUpdating(false)
-    }
-  }
 
   const handleDeleteResource = async (resourceId: string) => {
     try {
@@ -122,7 +98,6 @@ export default function ManageIdeaSheet({
              <MyRoadmap 
                idea={idea} 
                onUpdateProgress={onUpdateProgress}
-               onAddResource={handleAddResource}
                onDeleteResource={handleDeleteResource}
              />
             </ScrollArea>

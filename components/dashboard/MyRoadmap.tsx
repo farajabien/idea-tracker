@@ -1,43 +1,29 @@
 "use client"
 
 import { defaultSteps, Idea, Step, Resource } from '@/lib/types'
-import { Checkbox } from '../ui/checkbox'
-import { Label } from '../ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { 
   Trophy, Flag, Lightbulb, ScrollText, Code, 
   TestTube, Rocket, Plus, Link as LinkIcon, 
-   BookOpen, FileCode, BookMarked, 
-   Wrench
+  BookOpen, FileCode, BookMarked, 
+  Wrench, Trash2, ChevronDown, ChevronRight
 } from 'lucide-react'
-import { Button } from '../ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from '../ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from '../ui/textarea'
-import { useState } from 'react'
-import { Badge } from '../ui/badge'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
 import { addResource } from '@/app/api/firebaseApi'
+import ResourceModal from './ResourceModal'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 interface MyRoadmapProps {
   idea: Idea
   onUpdateProgress: (idea: Idea, steps: Step[]) => Promise<void>
-  onAddResource?: (stepId: string, resource: Omit<Resource, "id" | "addedAt" | "userId">) => Promise<void>
-  onDeleteResource?:  (resourceId: string) => Promise<void>
+  onDeleteResource?: (resourceId: string) => Promise<void>
 }
 
 const stepIcons = {
@@ -60,17 +46,28 @@ const resourceTypeIcons = {
   other: LinkIcon,
 }
 
-export default function MyRoadmap({ idea, onUpdateProgress, onAddResource, onDeleteResource }: MyRoadmapProps) {
+export default function MyRoadmap({ idea, onUpdateProgress, onDeleteResource }: MyRoadmapProps) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
   const [activeStep, setActiveStep] = useState<string | null>(null)
-  const [newResource, setNewResource] = useState({
-    title: '',
-    url: '',
-    type: 'inspiration' as Resource['type'],
-    notes: ''
-  })
+  const [resourceModalOpen, setResourceModalOpen] = useState(false)
+  const [activeResourceStep, setActiveResourceStep] = useState<string | null>(null)
+
+  const steps = idea.steps || defaultSteps
+  const completedSteps = steps.filter(s => s.isCompleted).length
+
+  const toggleStep = (stepId: string) => {
+    const newExpanded = new Set(expandedSteps)
+    if (newExpanded.has(stepId)) {
+      newExpanded.delete(stepId)
+    } else {
+      newExpanded.add(stepId)
+    }
+    setExpandedSteps(newExpanded)
+  }
 
   const handleStepToggle = async (stepId: string) => {
-    const updatedSteps = (idea.steps || defaultSteps).map(s =>
+    setActiveStep(stepId)
+    const updatedSteps = steps.map(s =>
       s.id === stepId ? {
         ...s,
         isCompleted: !s.isCompleted,
@@ -80,255 +77,207 @@ export default function MyRoadmap({ idea, onUpdateProgress, onAddResource, onDel
     await onUpdateProgress(idea, updatedSteps)
   }
 
-  const handleAddResource = async (stepId: string, resourceData: Omit<Resource, "id" | "addedAt" | "userId" | "ideaId" | "stepId">) => {
-    if (onAddResource) {
-
-    await addResource(idea.id, stepId, resourceData);
- 
-      setNewResource({
-        title: '',
-        url: '',
-        type: 'inspiration',
-        notes: ''
-      })
-      setActiveStep(null)
+  const handleAddResource = async (
+    stepId: string,
+    resourceData: Omit<Resource, "id" | "addedAt" | "userId" | "ideaId" | "stepId">
+  ) => {
+    try {
+      await addResource(idea.id, stepId, resourceData)
+      setResourceModalOpen(false)
+      setActiveResourceStep(null)
+      toast.success('Resource added successfully')
+    } catch (error) {
+      console.error('Failed to add resource:', error)
+      toast.error('Failed to add resource')
     }
   }
 
-  const steps = idea.steps || defaultSteps
+  // Summary stats component
+  const StatsSection = () => (
+    <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="p-4 rounded-lg border bg-card">
+        <div className="text-2xl font-bold">{completedSteps}/{steps.length}</div>
+        <div className="text-sm text-muted-foreground">Steps Completed</div>
+      </div>
+      <div className="p-4 rounded-lg border bg-card">
+        <div className="text-2xl font-bold">{idea.resources?.length || 0}</div>
+        <div className="text-sm text-muted-foreground">Total Resources</div>
+      </div>
+      <div className="p-4 rounded-lg border bg-card">
+        <div className="text-2xl font-bold">
+          {new Set(idea.resources?.map(r => r.stepId)).size}
+        </div>
+        <div className="text-sm text-muted-foreground">Steps with Resources</div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-8">
-      {/* Horizontal Progress Dots */}
-      <div className="relative">
-        <div className="absolute top-4 left-0 right-0 h-px bg-border" />
+      <StatsSection />
+
+      {/* Progress Bar */}
+      <div className="relative h-2 bg-border rounded-full overflow-hidden">
         <div 
-          className={cn("absolute top-4 left-0 h-px bg-primary transition-all duration-500",
-            activeStep ? "bg-primary-500" : ""
-          )}
-          style={{ 
-            width: `${(steps.filter(s => s.isCompleted).length / steps.length) * 100}%` 
-          }}
+          className="absolute left-0 top-0 h-full bg-primary transition-all duration-500"
+          style={{ width: `${(completedSteps / steps.length) * 100}%` }}
         />
-        <div className="relative flex justify-between">
-          {steps.map((step) => {
-            const Icon = stepIcons[step.id as keyof typeof stepIcons] || Trophy
-            return (
-              <div key={step.id} className="flex flex-col items-center">
-                <div className={cn(
-                  "w-8 h-8 rounded-full border-2 flex items-center justify-center",
-                  "transition-colors duration-300",
-                  step.isCompleted 
-                    ? "border-primary bg-primary text-primary-foreground" 
-                    : "border-border bg-background text-muted-foreground"
-                )}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <span className="text-xs text-muted-foreground mt-1 text-center">
-                  {step.name.split(' ')[0]}
-                </span>
-              </div>
-            )
-          })}
-        </div>
       </div>
 
-      {/* Vertical Timeline */}
-      <div className="relative pl-8">
-        <div className="absolute left-8 top-0 bottom-0 w-px bg-border" />
-
-        {steps.map((step, index) => {
+      {/* Steps List */}
+      <div className="space-y-4">
+        {steps.map((step) => {
           const Icon = stepIcons[step.id as keyof typeof stepIcons] || Trophy
-          const isLast = index === steps.length - 1
+          const isExpanded = expandedSteps.has(step.id)
           const resources = idea.resources?.filter(r => r.stepId === step.id) || []
 
           return (
-            <div key={step.id} className={cn(
-              "relative mb-8",
-              !isLast && "pb-8"
-            )}>
-              <div className={cn(
-                "absolute -left-8 top-0 bottom-0 w-px",
-                step.isCompleted ? "bg-primary" : "bg-muted"
-              )} />
-
-              <div className={cn(
-                "absolute -left-10 rounded-full p-2",
-                step.isCompleted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              )}>
-                <Icon className="h-4 w-4" />
-              </div>
-
-              <div className={cn(
-                "ml-4 p-4 rounded-lg border transition-colors",
-                step.isCompleted ? "bg-primary/5 border-primary/20" : "bg-card border-muted",
-                "hover:border-primary/50"
-              )}>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id={step.id}
-                      checked={step.isCompleted}
-                      onCheckedChange={() => handleStepToggle(step.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor={step.id}
-                          className={cn(
-                            "font-medium cursor-pointer",
-                            step.isCompleted && "text-primary"
-                          )}
-                        >
-                          {step.name}
-                        </Label>
-                        <span className="text-xs text-muted-foreground">
-  {step.completedAt && (
-    <span>
-      {format(new Date(Number(step.completedAt) / 1000), 'MMM dd, yyyy')}
-    </span>
-  )}
-</span>
-
-
+            <Collapsible
+              key={step.id}
+              open={isExpanded}
+              onOpenChange={() => toggleStep(step.id)}
+            >
+              <CollapsibleTrigger className="w-full">
+                <div className={cn(
+                  "p-4 rounded-lg border transition-colors",
+                  step.isCompleted ? "bg-primary/5 border-primary/20" : "bg-card border-muted",
+                  "hover:border-primary/50"
+                )}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center",
+                        step.isCompleted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                        step.id === activeStep && "font-bold" 
+                      )}>
+                        <Icon className="h-4 w-4" />
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {step.description}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={step.id}
+                          checked={step.isCompleted}
+                          onCheckedChange={() => handleStepToggle(step.id)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                        <div className="text-left">
+                          <Label className="font-medium">{step.name}</Label>
+                          {resources.length > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              {resources.length} resource{resources.length !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {step.completedAt && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(step.completedAt), 'MMM d')}
+                        </span>
+                      )}
+                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </div>
                   </div>
+                </div>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="mt-2 ml-11 pl-4 border-l space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {step.description}
+                  </p>
 
                   {/* Resources Section */}
-                  <div className="pl-8">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Resources</h4>
-                      <Dialog>
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-medium">Resources</h4>
+                        {resources.length > 0 && (
+                          <Badge variant="secondary">
+                            {resources.length}
+                          </Badge>
+                        )}
+                      </div>
+                      <Dialog open={resourceModalOpen && activeResourceStep === step.id}>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveResourceStep(step.id)
+                              setResourceModalOpen(true)
+                            }}
+                          >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Resource
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add Resource</DialogTitle>
-                            <DialogDescription>
-                              Add helpful resources for this step
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label>Title</Label>
-                              <Input
-                                placeholder="Resource title"
-                                value={newResource.title}
-                                onChange={e => setNewResource({
-                                  ...newResource,
-                                  title: e.target.value
-                                })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>URL</Label>
-                              <Input
-                                placeholder="https://"
-                                value={newResource.url}
-                                onChange={e => setNewResource({
-                                  ...newResource,
-                                  url: e.target.value
-                                })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Type</Label>
-                              <Select
-                                value={newResource.type}
-                                onValueChange={value => setNewResource({
-                                  ...newResource,
-                                  type: value as Resource['type']
-                                })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="inspiration">Inspiration</SelectItem>
-                                  <SelectItem value="tutorial">Tutorial</SelectItem>
-                                  <SelectItem value="tool">Tool</SelectItem>
-                                  <SelectItem value="documentation">Documentation</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Notes</Label>
-                              <Textarea
-                                placeholder="Add notes about this resource..."
-                                value={newResource.notes}
-                                onChange={e => setNewResource({
-                                  ...newResource,
-                                  notes: e.target.value
-                                })}
-                              />
-                            </div>
-                            <Button
-                              className="w-full"
-                              onClick={() => handleAddResource(step.id, newResource)}
-                            >
-                              Add Resource
-                            </Button>
-                          </div>
-                        </DialogContent>
+                        {resourceModalOpen && activeResourceStep === step.id && (
+                          <ResourceModal 
+                            onSubmit={async (resource) => {
+                              await handleAddResource(step.id, resource)
+                            }}
+                          />
+                        )}
                       </Dialog>
                     </div>
 
                     {resources.length > 0 ? (
-                      <div className="space-y-2 mt-2">
+                      <div className="space-y-2">
                         {resources.map((resource) => {
                           const TypeIcon = resourceTypeIcons[resource.type || 'other']
                           return (
                             <div
                               key={resource.id}
-                              className="flex items-start space-x-2 text-sm"
+                              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted group"
                             >
-                              <TypeIcon className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <a
-                                    href={resource.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:text-primary"
-                                  >
-                                    {resource.title}
-                                  </a>
-                                  <Badge variant="secondary">
-                                    {resource.type}
-                                  </Badge>
-                                  <Button onClick={() => onDeleteResource && onDeleteResource(resource.id)}>
-                                    Delete
-                                  </Button>
-                                </div>
-                                {resource.notes && (
-                                  <p className="text-muted-foreground mt-1">
-                                    {resource.notes}
-                                  </p>
-                                )}
-                              </div>
+                              <TypeIcon className="h-4 w-4 text-muted-foreground" />
+                              <a
+                                href={resource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 hover:text-primary truncate"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                {resource.title}
+                              </a>
+                              <Badge variant="secondary" className="opacity-50 group-hover:opacity-100">
+                                {resource.type}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (onDeleteResource) {
+                                    toast.promise(
+                                      onDeleteResource(resource.id),
+                                      {
+                                        loading: 'Deleting resource...',
+                                        success: 'Resource deleted',
+                                        error: 'Failed to delete resource'
+                                      }
+                                    )
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           )
                         })}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground mt-2">
+                      <p className="text-sm text-muted-foreground">
                         No resources added yet
                       </p>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           )
         })}
       </div>

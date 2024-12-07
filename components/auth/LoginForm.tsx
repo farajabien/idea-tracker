@@ -36,7 +36,7 @@ export default function LoginForm() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password)
-      router.push("/") // Redirect to dashboard after login
+      router.push("/dashboard") // Redirect to dashboard after login
     } catch (err) {
       const authError = err as AuthError
       setError(formatAuthError(authError.code))
