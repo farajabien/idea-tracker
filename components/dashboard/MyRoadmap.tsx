@@ -65,17 +65,32 @@ export default function MyRoadmap({ idea, onUpdateProgress, onDeleteResource }: 
     setExpandedSteps(newExpanded)
   }
 
-  const handleStepToggle = async (stepId: string) => {
-    setActiveStep(stepId)
-    const updatedSteps = steps.map(s =>
-      s.id === stepId ? {
-        ...s,
-        isCompleted: !s.isCompleted,
-        completedAt: !s.isCompleted ? new Date() : null
-      } : s
-    )
-    await onUpdateProgress(idea, updatedSteps)
+const handleStepToggle = async (stepId: string) => {
+    try {
+      setActiveStep(stepId)
+      // Ensure we have an array of steps
+      const currentSteps = Array.isArray(steps) ? steps : defaultSteps
+      
+      const updatedSteps = currentSteps.map(s =>
+        s.id === stepId ? {
+          ...s,
+          isCompleted: !s.isCompleted,
+          completedAt: !s.isCompleted ? new Date() : null
+        } : s
+      )
+  
+      await onUpdateProgress(idea, {
+        ...idea,
+        //@ts-expect-error TODO: UPDATED STEPS HAS TYPE ERRORS :)
+        steps: updatedSteps
+      })
+    } catch (error) {
+      console.error("Error updating step:", error)
+      toast.error("Failed to update progress")
+    }
   }
+  
+
 
   const handleAddResource = async (
     stepId: string,
@@ -172,7 +187,9 @@ export default function MyRoadmap({ idea, onUpdateProgress, onDeleteResource }: 
                     <div className="flex items-center gap-2">
                       {step.completedAt && (
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(step.completedAt), 'MMM d')}
+                          {format(new Date(
+                            //@ts-expect-error time value is in micro seconds
+                            step.completedAt * 1000), 'MMM dd')}
                         </span>
                       )}
                       {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}

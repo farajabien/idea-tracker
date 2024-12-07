@@ -18,13 +18,11 @@ import MyRoadmap from "./MyRoadmap"
 interface ManageIdeaSheetProps {
   idea: Idea
   onUpdateProgress: (idea: Idea, steps: Step[]) => Promise<void>
-  onUpdateVisibility?: (isPublic: boolean) => Promise<void>
 }
 
 export default function ManageIdeaSheet({ 
   idea, 
   onUpdateProgress,
-  onUpdateVisibility 
 }: ManageIdeaSheetProps) {
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -51,7 +49,6 @@ export default function ManageIdeaSheet({
     try {
       setIsUpdating(true)
       await updateProjectVisibility(idea.id, !idea.isPublic)
-      onUpdateVisibility?.(!idea.isPublic)
       toast.success(`Project is now ${idea.isPublic ? 'private' : 'public'}`)
     } catch (error) {
       toast.error("Failed to update visibility")

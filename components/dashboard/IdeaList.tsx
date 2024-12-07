@@ -101,70 +101,60 @@ export default function IdeaList({ filter = "all" }: IdeaListProps) {
     return Math.round((steps.filter(step => step.isCompleted).length / steps.length) * 100)
   }
 
-  const handleProgressUpdate = async (idea: Idea, updatedSteps: Step[]) => {
+  const handleProgressUpdate = async (idea: Idea, updates: Partial<Idea>) => {
     try {
-      const allCompleted = updatedSteps.every(step => step.isCompleted);
-      const wasCompleted = idea.status === "Completed";
-      const someCompleted = updatedSteps.some(step => step.isCompleted);
+      // Ensure we have the steps array
+      if (!Array.isArray(updates.steps)) {
+        throw new Error("Invalid steps data")
+      }
+  
+      const updatedSteps = updates.steps
+      const allCompleted = updatedSteps.every(step => step.isCompleted)
+      const wasCompleted = idea.status === "Completed"
+      const someCompleted = updatedSteps.some(step => step.isCompleted)
   
       // Determine new status
-      const newStatus: ProjectStatus = 
-        allCompleted ? "Completed" : 
-        someCompleted ? "In Progress" : 
-        "Not Started";
+      const newStatus: ProjectStatus = allCompleted ? "Completed" 
+        : someCompleted ? "In Progress" 
+        : "Not Started"
   
-      // Calculate updated metrics
-      const updatedMetrics = {
+      // Create clean metrics object
+      const metrics = {
         views: idea.metrics?.views ?? 0,
         clicks: idea.metrics?.clicks ?? 0,
         lastUpdated: new Date(),
-        ...(allCompleted && !wasCompleted
-          ? {
-              completedAt: new Date(),
-              timeToComplete: idea.createdAt
-                ? Math.round(
-                    (new Date().getTime() - new Date(idea.createdAt).getTime()) / 
-                    (1000 * 60 * 60 * 24)
-                  )
-                : null,
-            }
-          : {}),
-        ...(idea.metrics?.completedAt && !allCompleted
-          ? { completedAt: idea.metrics.completedAt }
-          : {}),
-        ...(idea.metrics?.timeToComplete && !allCompleted
-          ? { timeToComplete: idea.metrics.timeToComplete }
-          : {}),
-      };
+        ...(allCompleted && !wasCompleted ? {
+          completedAt: new Date(),
+          timeToComplete: Math.round(
+            (new Date().getTime() - new Date(idea.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+          )
+        } : {}),
+        ...(idea.metrics?.completedAt ? { completedAt: idea.metrics.completedAt } : {}),
+        ...(idea.metrics?.timeToComplete ? { timeToComplete: idea.metrics.timeToComplete } : {})
+      }
   
-      // Prepare updates
+      // Create the update object
       const ideaUpdates: Partial<Idea> = {
         steps: updatedSteps,
         status: newStatus,
-        metrics: {
-          ...updatedMetrics,
-          timeToComplete: updatedMetrics.timeToComplete ?? undefined,
-        },
-      };
+        metrics
+      }
   
-      // Update in database
-      await updateIdea(idea.id, ideaUpdates);
-  
+      await updateIdea(idea.id, ideaUpdates)
+      
       // Update local state
-      setIdeas(prevIdeas =>
-        prevIdeas.map(i =>
-          i.id === idea.id
-            ? { ...i, ...ideaUpdates }
-            : i
-        )
-      );
-  
-      toast.success(allCompleted ? "Progress marked as completed!" : "Idea progress updated successfully!");
+      setIdeas(ideas.map(i => 
+        i.id === idea.id 
+          ? { ...i, ...ideaUpdates }
+          : i
+      ))
+      
     } catch (error) {
-      console.error("Error updating progress:", error);
-      toast.error("Failed to update progress. Please try again later.");
+      console.error("Error updating progress:", error)
+      toast.error("Failed to update progress")
+      throw error
     }
-  };
+  }
   
   return (
     <div className="w-full">
@@ -230,7 +220,7 @@ export default function IdeaList({ filter = "all" }: IdeaListProps) {
                 <div className="flex items-center gap-2">
     <ManageIdeaSheet 
       idea={idea}
-      onUpdateProgress={handleProgressUpdate}
+      onUpdateProgress={(idea, steps) => handleProgressUpdate(idea, { steps })}
     />
     {idea.productionUrl && (
       <Button 
