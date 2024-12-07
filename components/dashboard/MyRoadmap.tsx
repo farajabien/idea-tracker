@@ -183,11 +183,15 @@ export default function MyRoadmap({ idea, onUpdateProgress, onAddResource, onDel
                         >
                           {step.name}
                         </Label>
-                        {step.completedAt && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(step.completedAt), 'MMM d, yyyy')}
-                          </span>
-                        )}
+                        <span className="text-xs text-muted-foreground">
+  {step.completedAt && (
+    <span>
+      {format(new Date(Number(step.completedAt) / 1000), 'MMM dd, yyyy')}
+    </span>
+  )}
+</span>
+
+
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {step.description}
