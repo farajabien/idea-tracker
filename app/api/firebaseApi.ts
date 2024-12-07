@@ -134,19 +134,134 @@ export const deleteIdea = async (id: string) => {
   await deleteDoc(ideaRef);
 };
 
-// Add a new resource
-export const addResource = async (resource: Omit<Resource, "id" | "addedAt" | "userId">) => {
+// Add a new resource with stepId
+export const addResource = async (
+  ideaId: string,
+  stepId: string,
+  resource: Omit<Resource, "id" | "addedAt" | "userId" | "ideaId" | "stepId">
+) => {
   const userId = getCurrentUserId();
+  
+  // First verify idea ownership
+  const ideaRef = doc(db, "ideas", ideaId);
+  const ideaDoc = await getDoc(ideaRef);
+  const idea = ideaDoc.data() as Idea;
+  
+  if (!idea) {
+    throw new ApiError('Idea not found', 'NOT_FOUND', 'This project no longer exists');
+  }
+  
+  if (idea.userId !== userId) {
+    throw new ApiError('Permission denied', 'PERMISSION', 'You can only add resources to your own projects');
+  }
+
+  // Create new resource
   const newResourceRef = doc(collection(db, "resources"));
   const resourceWithDefaults = {
     ...resource,
     id: newResourceRef.id,
     userId,
+    ideaId,
+    stepId,
     addedAt: new Date(),
   };
+
   await setDoc(newResourceRef, resourceWithDefaults);
   return resourceWithDefaults;
 };
+
+// Get all resources for a specific step
+export const getStepResources = async (ideaId: string, stepId: string): Promise<Resource[]> => {
+  const userId = getCurrentUserId();
+  const resourceQuery = query(
+    collection(db, "resources"), 
+    where("ideaId", "==", ideaId),
+    where("stepId", "==", stepId),
+    where("userId", "==", userId)
+  );
+  
+  const snapshot = await getDocs(resourceQuery);
+  
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      ...data,
+      addedAt: data.addedAt?.toDate() || new Date()
+    } as Resource;
+  });
+};
+
+// Get all resources for an idea, grouped by step
+export const getIdeaResources = async (ideaId: string): Promise<{ [stepId: string]: Resource[] }> => {
+  const userId = getCurrentUserId();
+  const resourceQuery = query(
+    collection(db, "resources"), 
+    where("ideaId", "==", ideaId),
+    where("userId", "==", userId)
+  );
+  
+  const snapshot = await getDocs(resourceQuery);
+  const resources = snapshot.docs.map(doc => ({
+    ...doc.data(),
+    addedAt: doc.data().addedAt?.toDate() || new Date()
+  } as Resource));
+
+  // Group resources by stepId
+  return resources.reduce((acc, resource) => {
+    if (!acc[resource.stepId]) {
+      acc[resource.stepId] = [];
+    }
+    acc[resource.stepId].push(resource);
+    return acc;
+  }, {} as { [stepId: string]: Resource[] });
+};
+
+// Delete a resource with ownership checks
+export const deleteResource = async (ideaId: string, resourceId: string) => {
+  const userId = getCurrentUserId();
+  const resourceRef = doc(db, "resources", resourceId);
+  const resourceDoc = await getDoc(resourceRef);
+  
+  if (!resourceDoc.exists()) {
+    throw new ApiError('Resource not found', 'NOT_FOUND', 'This resource no longer exists');
+  }
+  
+  const resource = resourceDoc.data() as Resource;
+  
+  if (resource.userId !== userId || resource.ideaId !== ideaId) {
+    throw new ApiError('Permission denied', 'PERMISSION', 'You can only delete your own resources');
+  }
+  
+  await deleteDoc(resourceRef);
+};
+
+// Update a resource
+export const updateResource = async (
+  ideaId: string,
+  resourceId: string,
+  updates: Partial<Omit<Resource, "id" | "userId" | "ideaId" | "stepId" | "addedAt">>
+) => {
+  const userId = getCurrentUserId();
+  const resourceRef = doc(db, "resources", resourceId);
+  const resourceDoc = await getDoc(resourceRef);
+  
+  if (!resourceDoc.exists()) {
+    throw new ApiError('Resource not found', 'NOT_FOUND', 'This resource no longer exists');
+  }
+  
+  const resource = resourceDoc.data() as Resource;
+  
+  if (resource.userId !== userId || resource.ideaId !== ideaId) {
+    throw new ApiError('Permission denied', 'PERMISSION', 'You can only update your own resources');
+  }
+  
+  await updateDoc(resourceRef, {
+    ...updates,
+    lastUpdated: new Date()
+  });
+};
+
+
 
 // Get all resources for an idea (with ownership check)
 export const getResourcesForIdea = async (ideaId: string): Promise<Resource[]> => {
@@ -160,19 +275,7 @@ export const getResourcesForIdea = async (ideaId: string): Promise<Resource[]> =
   return snapshot.docs.map(doc => doc.data() as Resource);
 };
 
-// Delete a resource (with ownership check)
-export const deleteResource = async (resourceId: string) => {
-  const userId = getCurrentUserId();
-  const resourceRef = doc(db, "resources", resourceId);
-  const resourceDoc = await getDoc(resourceRef);
-  const resource = resourceDoc.data() as Resource;
-  
-  if (resource.userId !== userId) {
-    throw new Error("You don't have permission to delete this resource");
-  }
-  
-  await deleteDoc(resourceRef);
-};
+
 
 // Add a step to an idea (with ownership check)
 export const addStep = async (ideaId: string, step: Step) => {

@@ -113,15 +113,18 @@ export type Idea = {
     bio?: string;
     skills?: string[];
   };
+  resources: Resource[]
 };
 
 export type Resource = {
   id: string;
   ideaId: string;
+  stepId: string;  // Added for step association
   userId: string;
   title: string;
   url: string;
   addedAt: Date;
+  lastUpdated?: Date;  // Added for tracking updates
   type?: "inspiration" | "tutorial" | "tool" | "documentation" | "other";
   notes?: string;
 };

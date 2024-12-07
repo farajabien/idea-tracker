@@ -79,6 +79,7 @@ export default function AddIdeaForm({ onSuccess }: AddIdeaFormProps) {
           clicks: 0,
           lastUpdated: new Date(),
         },
+        resources: []
       })
       
       toast.success("Idea added successfully!")
