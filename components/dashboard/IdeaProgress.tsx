@@ -6,34 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { format } from "date-fns"
 import { useState } from "react"
-import { Step, Idea } from "@/lib/types"
-
-const defaultSteps: Omit<Step, "completedAt" | "isCompleted">[] = [
-  {
-    id: "ideation",
-    name: "Define Core Idea",
-  },
-  {
-    id: "planning",
-    name: "Plan Requirements",
-  },
-  {
-    id: "design",
-    name: "Design & Mockups",
-  },
-  {
-    id: "development",
-    name: "Core Development",
-  },
-  {
-    id: "testing",
-    name: "Testing & QA",
-  },
-  {
-    id: "launch",
-    name: "Launch & Share",
-  }
-]
+import { Step, Idea, defaultSteps } from "@/lib/types"
 
 interface IdeaProgressProps {
   idea: Idea

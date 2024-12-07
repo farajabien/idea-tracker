@@ -76,7 +76,6 @@ export default function AddIdeaDialog({ open, onOpenChange }: AddIdeaDialogProps
         projectType: data.projectType,
         isPublic: data.isPublic,
         status: "Not Started",
-        steps: [],
       })
       toast.success("Idea added successfully!")
       form.reset()

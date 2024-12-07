@@ -1,18 +1,77 @@
 export type Step = {
   id: string;
   name: string;
+  description: string;
   isCompleted: boolean;
   completedAt: Date | null;
 };
 
 export const defaultSteps: Step[] = [
-  { id: "idea", name: "Define Core Idea", isCompleted: false, completedAt: null },
-  { id: "research", name: "Research & Planning", isCompleted: false, completedAt: null },
-  { id: "design", name: "Design & Mockups", isCompleted: false, completedAt: null },
-  { id: "mvp", name: "Build MVP", isCompleted: false, completedAt: null },
-  { id: "testing", name: "Testing & Feedback", isCompleted: false, completedAt: null },
-  { id: "launch", name: "Launch & Share", isCompleted: false, completedAt: null }
-]
+  { 
+    id: "idea", 
+    name: "Define the Core Idea", 
+    description: "Outline the problem you're solving and the solution you're offering.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "validation", 
+    name: "Validate Your Idea", 
+    description: "Gather feedback, validate demand, and refine your concept based on insights.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "planning", 
+    name: "Research & Planning", 
+    description: "Plan features, technology stack, and roadmap for your project.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "prototyping", 
+    name: "Create Mockups or Prototypes", 
+    description: "Design initial wireframes or prototypes to visualize your idea.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "development", 
+    name: "Build the MVP", 
+    description: "Develop the core features of your product with minimal scope.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "testing", 
+    name: "Test & Iterate", 
+    description: "Test your MVP with real users, gather feedback, and improve.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "launch", 
+    name: "Launch Your Product", 
+    description: "Ship your MVP to your audience and start building traction.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "promote", 
+    name: "Promote & Share", 
+    description: "Promote your product to reach your target audience through social media, forums, or communities.", 
+    isCompleted: false, 
+    completedAt: null 
+  },
+  { 
+    id: "analyze", 
+    name: "Track & Analyze", 
+    description: "Monitor engagement, user feedback, and performance metrics to plan next steps.", 
+    isCompleted: false, 
+    completedAt: null 
+  }
+];
+
 
 export type ProjectType = "personal" | "client";
 export type ProjectVisibility = "public" | "private";

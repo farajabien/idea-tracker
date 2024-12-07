@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { addStep, updateStep } from "../../app/api/firebaseApi"; 
 import { Step } from "../../lib/types";
+import { Textarea } from "../ui/textarea";
 
 const StepsManager = ({ ideaId, steps }: { ideaId: string; steps: Step[] }) => {
   const [newStepName, setNewStepName] = useState("");
+  const [newStepDescription, setNewStepDescription] = useState("");
 
   const handleAddStep = async () => {
     try {
@@ -12,6 +14,7 @@ const StepsManager = ({ ideaId, steps }: { ideaId: string; steps: Step[] }) => {
         name: newStepName,
         isCompleted: false,
         completedAt: null,
+        description: ""
       };
       await addStep(ideaId, newStep);
       alert("Step added successfully!");
@@ -51,6 +54,11 @@ const StepsManager = ({ ideaId, steps }: { ideaId: string; steps: Step[] }) => {
         placeholder="New step name"
         value={newStepName}
         onChange={(e) => setNewStepName(e.target.value)}
+      />
+       <Textarea
+        placeholder="What Does Success look like for this step"
+        value={newStepDescription}
+        onChange={(e) => setNewStepDescription(e.target.value)}
       />
       <button onClick={handleAddStep}>Add Step</button>
     </div>

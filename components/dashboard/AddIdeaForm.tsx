@@ -74,7 +74,6 @@ export default function AddIdeaForm({ onSuccess }: AddIdeaFormProps) {
         isPublic: data.isPublic,
         tags,
         status: "Not Started",
-        steps: [],
         metrics: {
           views: 0,
           clicks: 0,

@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, arrayUnion, query, where, getDoc, increment, orderBy,limit as firebaseLimit } from "firebase/firestore";
 import { auth } from "../../lib/firebase";
-import { BuilderStats, Idea, ProjectCategory, Resource, Step } from "../../lib/types";
+import { BuilderStats, defaultSteps, Idea, ProjectCategory, Resource, Step } from "../../lib/types";
 import { db } from "../../lib/firebase";
 
 // Add a custom error type
@@ -46,15 +46,20 @@ const getCurrentUserId = (): string => {
 };
 
 // Add a new idea
-export const addIdea = async (idea: Omit<Idea, "id" | "createdAt" | "userId">) => {
+export const addIdea = async (
+  idea: Omit<Idea, "id" | "createdAt" | "userId" | "steps">
+) => {
   const userId = getCurrentUserId();
   const newIdeaRef = doc(collection(db, "ideas"));
+
   const ideaWithDefaults = {
     ...idea,
     id: newIdeaRef.id,
     userId,
     createdAt: new Date(),
+    steps: defaultSteps,
   };
+
   await setDoc(newIdeaRef, ideaWithDefaults);
   return ideaWithDefaults;
 };
