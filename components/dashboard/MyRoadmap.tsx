@@ -66,29 +66,27 @@ export default function MyRoadmap({ idea, onUpdateProgress, onDeleteResource }: 
   }
 
 const handleStepToggle = async (stepId: string) => {
-    try {
-      setActiveStep(stepId)
-      // Ensure we have an array of steps
-      const currentSteps = Array.isArray(steps) ? steps : defaultSteps
-      
-      const updatedSteps = currentSteps.map(s =>
-        s.id === stepId ? {
+  try {
+    const updatedSteps = steps.map(s => {
+      if (s.id === stepId) {
+        return {
           ...s,
           isCompleted: !s.isCompleted,
           completedAt: !s.isCompleted ? new Date() : null
-        } : s
-      )
-  
-      await onUpdateProgress(idea, {
-        ...idea,
-        //@ts-expect-error TODO: UPDATED STEPS HAS TYPE ERRORS :)
-        steps: updatedSteps
-      })
-    } catch (error) {
-      console.error("Error updating step:", error)
-      toast.error("Failed to update progress")
-    }
+        };
+      }
+      return s;
+    });
+
+    await onUpdateProgress(idea, updatedSteps);
+    
+    // Only update UI after successful API call
+    setActiveStep(stepId);
+  } catch (error) {
+    console.error('Failed to update step:', error);
+    toast.error('Failed to update step status');
   }
+};
   
 
 

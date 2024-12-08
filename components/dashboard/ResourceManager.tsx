@@ -28,15 +28,22 @@ interface ResourceManagerProps {
   stepId: string
 }
 
+interface ResourceFormData {
+  title: string;
+  url: string;
+  type: Resource['type'];
+  notes: string;
+}
+
 export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps) {
   const [resources, setResources] = useState<Resource[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [newResource, setNewResource] = useState({
-    title: "",
-    url: "",
-    type: "inspiration" as Resource["type"],
-    notes: ""
+  const [formData, setFormData] = useState<ResourceFormData>({
+    title: '',
+    url: '',
+    type: 'inspiration',
+    notes: ''
   })
 
   useEffect(() => {
@@ -56,26 +63,22 @@ export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps
     }
   }
 
-  const handleAddResource = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
     try {
-      setSubmitting(true)
-      await addResource(ideaId, stepId, newResource)
-      await fetchResources()
-      setNewResource({
-        title: "",
-        url: "",
-        type: "inspiration",
-        notes: ""
-      })
-      toast.success("Resource added successfully")
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to add resource")
+      await addResource(ideaId, stepId, formData);
+      setFormData({ title: '', url: '', type: 'inspiration', notes: '' });
+      await fetchResources();
+      toast.success('Resource added successfully');
+    } catch (error) {
+      toast.error('Failed to add resource');
+      console.error(error);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleDeleteResource = async (resourceId: string) => {
     try {
@@ -99,13 +102,13 @@ export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps
   return (
     <div className="space-y-6">
       {/* Add Resource Form */}
-      <form onSubmit={handleAddResource} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title">Title</Label>
           <Input
             id="title"
-            value={newResource.title}
-            onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder="Resource title"
             required
           />
@@ -116,8 +119,8 @@ export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps
           <Input
             id="url"
             type="url"
-            value={newResource.url}
-            onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
+            value={formData.url}
+            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
             placeholder="https://"
             required
           />
@@ -126,8 +129,8 @@ export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
           <Select
-            value={newResource.type}
-            onValueChange={(value) => setNewResource({ ...newResource, type: value as Resource["type"] })}
+            value={formData.type}
+            onValueChange={(value) => setFormData({ ...formData, type: value as Resource["type"] })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select type" />
@@ -146,8 +149,8 @@ export default function ResourceManager({ ideaId, stepId }: ResourceManagerProps
           <Label htmlFor="notes">Notes</Label>
           <Textarea
             id="notes"
-            value={newResource.notes}
-            onChange={(e) => setNewResource({ ...newResource, notes: e.target.value })}
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="Add any helpful notes..."
             className="h-20"
           />

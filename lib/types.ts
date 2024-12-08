@@ -1,10 +1,21 @@
-export type Step = {
+export type ProjectType = 'personal' | 'professional' | 'learning';
+
+export interface Step {
   id: string;
   name: string;
   description: string;
   isCompleted: boolean;
   completedAt: Date | null;
-};
+  estimatedDuration?: string; // e.g., "2-3 days"
+  resources?: Resource[];
+}
+
+export interface ProjectTemplate {
+  type: string;
+  name: string;
+  description: string;
+  steps: Step[];
+}
 
 export const defaultSteps: Step[] = [
   { 
@@ -72,8 +83,6 @@ export const defaultSteps: Step[] = [
   }
 ];
 
-
-export type ProjectType = "personal" | "client";
 export type ProjectVisibility = "public" | "private";
 export type ProjectStatus = "Not Started" | "In Progress" | "Completed";
 
@@ -84,9 +93,32 @@ export type ProjectCategory =
   | "API" 
   | "CLI Tool" 
   | "Library" 
+  | "Website" 
+  | "Social Media" 
   | "Other";
 
-export type Idea = {
+export interface ProjectProgress {
+  currentStep: number;
+  totalSteps: number;
+  completedSteps: number;
+  lastUpdated: Date;
+}
+
+export interface ProjectMetrics {
+  views: number;
+  clicks: number;
+  lastUpdated: Date;
+  completedAt?: Date;
+  timeToComplete?: number;
+  progress: {
+    currentStep: number;
+    totalSteps: number;
+    completedSteps: number;
+    lastUpdated: Date;
+  };
+}
+
+export interface Idea {
   id: string;
   userId: string;
   name: string;
@@ -94,18 +126,13 @@ export type Idea = {
   status: ProjectStatus;
   steps: Step[];
   isPublic: boolean;
-  projectType?: ProjectType;
+  projectType: ProjectType;
   productionUrl?: string;
   description?: string;
   category?: ProjectCategory;
   tags?: string[];
-  metrics?: {
-    views: number;
-    clicks: number;
-    lastUpdated: Date;
-    completedAt?: Date;
-    timeToComplete?: number; // in days
-  };
+  metrics?: ProjectMetrics;
+  progress?: ProjectProgress;
   builderProfile?: {
     twitter?: string;
     github?: string;

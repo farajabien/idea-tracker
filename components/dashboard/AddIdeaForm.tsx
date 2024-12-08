@@ -25,17 +25,31 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { addIdea } from "@/app/api/firebaseApi"
-import { ProjectCategory } from "@/lib/types"
+import { defaultSteps, ProjectCategory, ProjectType } from "@/lib/types"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.enum(["Web App", "Mobile App", "Chrome Extension", "API", "CLI Tool", "Library", "Other"] as const),
-  projectType: z.enum(["personal", "client"] as const),
+  category: z.enum([
+    "Web App", 
+    "Mobile App", 
+    "Chrome Extension", 
+    "API", 
+    "CLI Tool", 
+    "Library", 
+    "Website", 
+    "Social Media", 
+    "Other"
+  ] as const satisfies readonly ProjectCategory[]),
+  projectType: z.enum([
+    "personal", 
+    "professional", 
+    "learning"
+  ] as const satisfies readonly ProjectType[]),
   isPublic: z.boolean().default(false),
-  tags: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -55,16 +69,14 @@ export default function AddIdeaForm({ onSuccess }: AddIdeaFormProps) {
       category: "Web App",
       projectType: "personal",
       isPublic: false,
-      tags: "",
+      tags: [],
     },
   })
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      const tags = data.tags
-        ? data.tags.split(",").map(tag => tag.trim()).filter(Boolean)
-        : []
+      const tags = data.tags ?? []
 
       await addIdea({
         name: data.name,
@@ -78,6 +90,12 @@ export default function AddIdeaForm({ onSuccess }: AddIdeaFormProps) {
           views: 0,
           clicks: 0,
           lastUpdated: new Date(),
+          progress: {
+            currentStep: 0,
+            totalSteps: defaultSteps.length,
+            completedSteps: 0,
+            lastUpdated: new Date()
+          }
         },
         resources: []
       })

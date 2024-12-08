@@ -11,17 +11,21 @@ export default function DashboardHeader() {
   const [showAddIdea, setShowAddIdea] = useState(false)
 
   return (
-    <div className="flex h-16 items-center px-4 border-b gap-4 mb-8">
-      <div className="flex flex-1">
+    <div className="flex h-16 items-center px-4 border-b gap-4 mb-4 md:mb-8">
+      <div className="flex flex-1 items-center">
         <Link href="/dashboard" className="font-semibold">
           Dashboard
         </Link>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Button onClick={() => setShowAddIdea(true)} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Idea
+      <div className="flex items-center gap-2 md:gap-4">
+        <Button 
+          onClick={() => setShowAddIdea(true)} 
+          size="sm"
+          className="px-2 md:px-4"
+        >
+          <Plus className="h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">New Idea</span>
         </Button>
         <UserNav />
       </div>

@@ -33,16 +33,31 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { addIdea } from "@/app/api/firebaseApi"
-import { ProjectCategory } from "@/lib/types"
+import {  ProjectCategory, ProjectType } from "@/lib/types"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { getTemplateByType } from '@/lib/projectTemplates'
 
 const formSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.enum(["Web App", "Mobile App", "Chrome Extension", "API", "CLI Tool", "Library", "Other"] as const),
-  projectType: z.enum(["personal", "client"] as const),
-  isPublic: z.boolean().default(false),
+  category: z.enum([
+    "Web App", 
+    "Mobile App", 
+    "Chrome Extension", 
+    "API", 
+    "CLI Tool", 
+    "Library", 
+    "Website", 
+    "Social Media", 
+    "Other"
+  ] as const satisfies readonly ProjectCategory[]),
+  projectType: z.enum([
+    "personal", 
+    "professional", 
+    "learning"
+  ] as const satisfies readonly ProjectType[]),
+  isPublic: z.boolean().default(false)
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -60,7 +75,7 @@ export default function AddIdeaDialog({ open, onOpenChange }: AddIdeaDialogProps
     defaultValues: {
       name: "",
       description: "",
-      category: "Web App",
+      category: "Website",
       projectType: "personal",
       isPublic: false,
     },
@@ -69,15 +84,30 @@ export default function AddIdeaDialog({ open, onOpenChange }: AddIdeaDialogProps
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      await addIdea({
+      const templateSteps = getTemplateByType(data.category)
+      
+      const ideaData = {
         name: data.name,
         description: data.description,
         category: data.category,
         projectType: data.projectType,
-        isPublic: data.isPublic,
-        status: "Not Started",
-        resources: []
-      })
+        isPublic: Boolean(data.isPublic),
+        status: "Not Started" as const,
+        resources: [],
+        steps: templateSteps,
+        metrics: {
+          views: 0,
+          clicks: 0,
+          lastUpdated: new Date(),
+          progress: {
+            currentStep: 0,
+            totalSteps: templateSteps.length,
+            completedSteps: 0,
+            lastUpdated: new Date()
+          }
+        }
+      }
+      await addIdea(ideaData)
       toast.success("Idea added successfully!")
       form.reset()
       onOpenChange(false)
@@ -96,8 +126,14 @@ export default function AddIdeaDialog({ open, onOpenChange }: AddIdeaDialogProps
     "API",
     "CLI Tool",
     "Library",
-    "Other",
+    "Website",
+    "Social Media",
+    "Other"
   ]
+
+  console.log('Form State:', form.formState)
+  console.log('Form Values:', form.getValues())
+  console.log('Form Errors:', form.formState.errors)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,18 +215,21 @@ export default function AddIdeaDialog({ open, onOpenChange }: AddIdeaDialogProps
                   <FormLabel>Project Type</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
+                    value={field.value}
                     defaultValue={field.value}
                   >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project type" />
-                      </SelectTrigger>
-                    </FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project type" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="personal">Personal Project</SelectItem>
-                      <SelectItem value="client">Client Project</SelectItem>
+                      <SelectItem value="professional">Professional Project</SelectItem>
+                      <SelectItem value="learning">Learning Project</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormDescription>
+                    What type of project is this?
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
